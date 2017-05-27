@@ -1,20 +1,31 @@
 package main
 
 import (
+	"fmt"
+	"time"
 	"github.com/MattLloyd101/Buddha-go/buddha"
 	tiff "golang.org/x/image/tiff"
 )
 
 func main() {
+	var now = time.Now()
+	var outFolder = fmt.Sprintf("out/%d-%d-%d %d.%d.%d/", 
+		now.Year(), 
+		now.Month(),
+		now.Day(),
+		now.Hour(),
+		now.Minute(),
+		now.Second())
+
 	const (
 		DPI = 72
 		width = 35
 		height = 20
 
-		iterationCount = 10000
-		passCount = 0xFFFFFF
-		logInterval = 0xFFFF
-		saveInterval = 0xFFFFF
+		iterationCount = 0xFFFFF
+		passCount = 0xFFFFF
+		logInterval = 0xFF
+		saveInterval = 0xFFF
 		saveIntervalEnabled = true
 	)
 
@@ -35,7 +46,8 @@ func main() {
 		0,
 		logInterval,
 		saveInterval,
-		saveIntervalEnabled}
+		saveIntervalEnabled,
+		outFolder}
 
 	buddha.RunBuddha(&data)	
 }

@@ -44,6 +44,7 @@ type BuddhaData struct {
 	LogInterval int64
 	SaveInterval int64
 	SaveIntervalEnabled bool
+	OutFolder string
 }
 
 func scale(t float64, srcMin float64, srcMax float64, targMin float64, targMax float64) float64 {
@@ -118,10 +119,13 @@ func RunBuddha(data *BuddhaData) {
 			var passesLeft = data.PassCount - i
 			var secondsLeft = secondsPerPass * float64(passesLeft)
 			var minutesLeft = secondsLeft / 60
-			var minsPart = int(math.Floor(minutesLeft))
-			var secondsPart = int(math.Floor((minutesLeft - float64(minsPart)) * 60))
+			var hoursLeft = minutesLeft / 60
+			// pretty sure this is really stupid math that can be more efficient...
+			var hoursPart = int(math.Floor(hoursLeft))
+			var minsPart = int(math.Floor(minutesLeft - float64(hoursPart * 60)))
+			var secondsPart = int(math.Floor(secondsLeft - float64(minsPart * 60) - float64(hoursPart * 60 * 60)))
 
-			fmt.Printf("%X/%X – %d mins %d seconds remain\n", i, data.PassCount, minsPart, secondsPart)
+			fmt.Printf("%X/%X – %d hours %d mins %d seconds remain\n", i, data.PassCount, hoursPart, minsPart, secondsPart)
 		}
 
 		if(data.SaveIntervalEnabled && i % data.SaveInterval == 0) {
@@ -157,7 +161,8 @@ func render16bitGreyscale(data *BuddhaData) image.Image {
 
 func saveFile(img image.Image, data *BuddhaData, filename string) {
 	fmt.Println("Saving: ", filename)
-	f, _ := os.OpenFile("out/" + filename, os.O_WRONLY|os.O_CREATE, 0600)
+	os.Mkdir(data.OutFolder, 0777)
+	f, _ := os.OpenFile(data.OutFolder + filename, os.O_WRONLY|os.O_CREATE, 0600)
 	defer f.Close()
 	
 	tiff.Encode(f, img, data.TiffOptions)
