@@ -2,7 +2,9 @@ package buddha
 
 import (
 	"os"
+	"time"
 	"fmt"
+	"math"
 	"math/rand"
 	image "image"
 	// Damn Americans and their insistence on spelling things wrong!
@@ -39,6 +41,9 @@ type BuddhaData struct {
 	MaxValue uint32
 	TiffOptions *tiff.Options
 	Skipped int64
+	LogInterval int64
+	SaveInterval int64
+	SaveIntervalEnabled bool
 }
 
 func scale(t float64, srcMin float64, srcMax float64, targMin float64, targMax float64) float64 {
@@ -95,21 +100,35 @@ func RunBuddha(data *BuddhaData) {
 	rand.Seed(data.Seed)
 
 	fmt.Println("Beginning Iteration")
-	for i := int64(0); i < data.PassCount; i++ {
+
+	var firstTimestamp = time.Now().UnixNano()
+	// offset by 1 so we don't get a huge save on pass 0.
+	for i := int64(1); i <= data.PassCount; i++ {
 		var dX = scale(rand.Float64(), 0, 1, xMin, xMax)
 		var dY = scale(rand.Float64(), 0, 1, yMin, yMax)
 
 		runPass(dX, dY, data)
-		if(i % 0xFF == 0) {
-			fmt.Printf("%X/%X skipped(%X)\n", i, data.PassCount, data.Skipped) 
+		if(i % data.LogInterval == 0) {
+			var now = time.Now().UnixNano()
+			var nanoDiff = now - firstTimestamp
+			var seconds = float64(nanoDiff) / float64(1000000000.0)
+
+			
+			var secondsPerPass = seconds / float64(i)
+			var passesLeft = data.PassCount - i
+			var secondsLeft = secondsPerPass * float64(passesLeft)
+			var minutesLeft = secondsLeft / 60
+			var minsPart = int(math.Floor(minutesLeft))
+			var secondsPart = int(math.Floor((minutesLeft - float64(minsPart)) * 60))
+
+			fmt.Printf("%X/%X – %d mins %d seconds remain\n", i, data.PassCount, minsPart, secondsPart)
 		}
 
-		if(i % 0xFFFF == 0) {
+		if(data.SaveIntervalEnabled && i % data.SaveInterval == 0) {
 			render(data, fmt.Sprintf("iteration-%X.tiff", i))
 		}
 	}
 
-	fmt.Println("Beginning Rendering")
 	render(data, "final.tiff")
 }
 
