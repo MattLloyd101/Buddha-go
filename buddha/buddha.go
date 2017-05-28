@@ -34,7 +34,7 @@ type BuddhaData struct {
 	Seed int64
 	Width int
 	Height int
-	InnerMaxIteration int
+	Iterations []int
 	PassCount int64
 	RenderType int
 	RawData *[][]uint32
@@ -45,8 +45,14 @@ type BuddhaData struct {
 	SaveInterval int64
 	SaveIntervalEnabled bool
 	OutFolder string
+	Parrallelism int
 }
 
+func clamp(t float64, min float64, max float64) float64 {
+	if(t < min) { return min }
+	if(t > max) { return max }
+	return t
+}
 func scale(t float64, srcMin float64, srcMax float64, targMin float64, targMax float64) float64 {
 	var srcSpread = srcMax - srcMin
 	var scaledT = (t - srcMin) / srcSpread
@@ -103,12 +109,19 @@ func RunBuddha(data *BuddhaData) {
 	fmt.Println("Beginning Iteration")
 
 	var firstTimestamp = time.Now().UnixNano()
+	var channel = make(chan bool, data.Parrallelism)
 	// offset by 1 so we don't get a huge save on pass 0.
 	for i := int64(1); i <= data.PassCount; i++ {
 		var dX = scale(rand.Float64(), 0, 1, xMin, xMax)
 		var dY = scale(rand.Float64(), 0, 1, yMin, yMax)
 
-		runPass(dX, dY, data)
+		// for _, maxIterations := range data.Iterations {
+		// 	channel <- true
+		// 	go runPass(dX, dY, maxIterations, data, channel)
+		// }
+		channel <- true
+		go runPass(dX, dY, int(data.PassCount - i), data, channel)
+
 		if(i % data.LogInterval == 0) {
 			var now = time.Now().UnixNano()
 			var nanoDiff = now - firstTimestamp
@@ -138,7 +151,7 @@ func RunBuddha(data *BuddhaData) {
 
 func render16bitGreyscale(data *BuddhaData) image.Image {
 
-	var img = image.NewRGBA64(image.Rect(0, 0, data.Width, data.Height))
+	var img = image.NewGray16(image.Rect(0, 0, data.Width, data.Height))
 	// transer data
 	for x := 0; x < data.Width; x++ {
 		for y := 0; y < data.Height; y++ {
@@ -148,10 +161,13 @@ func render16bitGreyscale(data *BuddhaData) image.Image {
 				float64(data.MaxValue), 
 				0, 
 				float64(uint16Max))
+			// var value = clamp(float64(raw), 0, float64(uint16Max))
 			var value16Bit = uint16(value)
+
+			if(raw == data.MaxValue) { fmt.Printf("Max(%d) %d - %f - %X\n", data.MaxValue, raw, value, value16Bit) }
 			
-			var colourValue = colour.RGBA64{value16Bit, value16Bit, value16Bit, 0xFFFF}
-			img.SetRGBA64(x, y, colourValue)
+			var colourValue = colour.Gray16{value16Bit}
+			img.SetGray16(x, y, colourValue)
 
 		}
 	}
@@ -176,14 +192,17 @@ func render(data *BuddhaData, filename string) {
 	}
 }
 
-func runPass(dX float64, dY float64, data *BuddhaData) {
-
-	var iterationCount, coordinates = iteration(dX, dY, data.InnerMaxIteration)
+func runPass(dX float64, dY float64, maxIteration int, data *BuddhaData, channel chan bool) {
+	var iterationCount, coordinates = iteration(dX, dY, maxIteration)
 	// bailout for never escaping nodes.
-	if len(coordinates) == 0 { return }
+	if len(coordinates) == 0 {
+		<-channel 
+		return 
+	}
 
 	var realCoords = imaginaryToRealCoordinates(coordinates, data.Width, data.Height)
 	combine(realCoords, iterationCount, data)
+	<-channel
 }
 
 func hasEscaped(x float64, y float64, escapeDist float64) bool {

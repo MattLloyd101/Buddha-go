@@ -17,27 +17,28 @@ func main() {
 		now.Minute(),
 		now.Second())
 
+	var iterations = []int{0xFF, 0xFFF, 0x5FFF}
 	const (
 		DPI = 72
 		width = 35
 		height = 20
 
-		iterationCount = 0xFFFFF
 		passCount = 0xFFFFF
-		logInterval = 0xFF
-		saveInterval = 0xFFF
+		logInterval = 0xFFF
+		saveInterval = 0xFFFF
 		saveIntervalEnabled = true
+		parrallelism = 16
 	)
 
 	var tiffOptions = tiff.Options{
-		tiff.Uncompressed,
+		tiff.Deflate,
 		false}
 
 	var data = buddha.BuddhaData{
-		0xDEADBEEF,
+		now.Unix(),
 		width*DPI,
 		height*DPI,
-		iterationCount,
+		iterations,
 		passCount,
 		buddha.RenderType16Greyscale,
 		nil,
@@ -47,7 +48,8 @@ func main() {
 		logInterval,
 		saveInterval,
 		saveIntervalEnabled,
-		outFolder}
+		outFolder,
+		parrallelism}
 
 	buddha.RunBuddha(&data)	
 }
