@@ -18,18 +18,21 @@ func main() {
 		now.Second())
 
 	const (
-		DPI = 300
-		width = 35
-		height = 20
+		DPI = 72
+		width = 3.5
+		height = 2.0
 
-		passCount = 0xFFFFF
+		realWidth = width*DPI
+		realHeight = height*DPI
+
+		passCount = realWidth*realHeight
 		MinIterations = 0x0
 		MaxIterations = 0xFFFF
 
 		logInterval = 1*time.Second
 
 		renderIntervalEnabled = true
-		renderInterval = 1*time.Minute
+		renderInterval = 10*time.Minute
 	)
 
 	var renderOptions = buddha.RenderOptions {
@@ -51,8 +54,8 @@ func main() {
 
 	var options = buddha.Options{
 		Seed: now.Unix(),
-		Width: width*DPI,
-		Height: height*DPI,
+		Width: realWidth,
+		Height: realHeight,
 
 		PassCount: passCount,
 		MinIterations: MinIterations,

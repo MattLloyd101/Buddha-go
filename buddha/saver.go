@@ -36,7 +36,7 @@ func (saver *Saver) generateFilename(state *internalState) string {
 func (saver *Saver) saveWithFilename(img image.Image, filename string) {
 	fmt.Println("Saving: ", filename)
 
-	os.Mkdir(saver.outFolder, 0777)
+	os.MkdirAll(saver.outFolder, 0777)
 	f, _ := os.OpenFile(saver.outFolder + filename, os.O_WRONLY|os.O_CREATE, 0600)
 	defer f.Close()
 	
