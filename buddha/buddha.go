@@ -94,7 +94,7 @@ func combine(coordinates []image.Point, iterationCount int, data *BuddhaData) {
 	}
 }
 
-func showProgress(int64 i, int64 firstTimestamp, int64 passCount) {
+func showProgress(i int64, firstTimestamp int64, passCount int64) {
 	var now = time.Now().UnixNano()
 	var nanoDiff = now - firstTimestamp
 	var seconds = float64(nanoDiff) / float64(1000000000.0)
