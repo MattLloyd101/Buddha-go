@@ -94,6 +94,25 @@ func combine(coordinates []image.Point, iterationCount int, data *BuddhaData) {
 	}
 }
 
+func showProgress(int64 i, int64 firstTimestamp, int64 passCount) {
+	var now = time.Now().UnixNano()
+	var nanoDiff = now - firstTimestamp
+	var seconds = float64(nanoDiff) / float64(1000000000.0)
+
+	
+	var secondsPerPass = seconds / float64(i)
+	var passesLeft = passCount - i
+	var secondsLeft = secondsPerPass * float64(passesLeft)
+	var minutesLeft = secondsLeft / 60
+	var hoursLeft = minutesLeft / 60
+	// pretty sure this is really stupid math that can be more efficient...
+	var hoursPart = int(math.Floor(hoursLeft))
+	var minsPart = int(math.Floor(minutesLeft - float64(hoursPart * 60)))
+	var secondsPart = int(math.Floor(secondsLeft - float64(minsPart * 60) - float64(hoursPart * 60 * 60)))
+
+	fmt.Printf("%X/%X – %d hours %d mins %d seconds remain\n", i, passCount, hoursPart, minsPart, secondsPart)
+}
+
 func RunBuddha(data *BuddhaData) {
 
 	fmt.Println("Initalising Data")
@@ -123,22 +142,7 @@ func RunBuddha(data *BuddhaData) {
 		go runPass(dX, dY, int(data.PassCount - i), data, channel)
 
 		if(i % data.LogInterval == 0) {
-			var now = time.Now().UnixNano()
-			var nanoDiff = now - firstTimestamp
-			var seconds = float64(nanoDiff) / float64(1000000000.0)
-
-			
-			var secondsPerPass = seconds / float64(i)
-			var passesLeft = data.PassCount - i
-			var secondsLeft = secondsPerPass * float64(passesLeft)
-			var minutesLeft = secondsLeft / 60
-			var hoursLeft = minutesLeft / 60
-			// pretty sure this is really stupid math that can be more efficient...
-			var hoursPart = int(math.Floor(hoursLeft))
-			var minsPart = int(math.Floor(minutesLeft - float64(hoursPart * 60)))
-			var secondsPart = int(math.Floor(secondsLeft - float64(minsPart * 60) - float64(hoursPart * 60 * 60)))
-
-			fmt.Printf("%X/%X – %d hours %d mins %d seconds remain\n", i, data.PassCount, hoursPart, minsPart, secondsPart)
+			showProgress(i, firstTimestamp, data.PassCount)
 		}
 
 		if(data.SaveIntervalEnabled && i % data.SaveInterval == 0) {
