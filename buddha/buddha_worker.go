@@ -17,9 +17,9 @@ type iterationPass struct {
 }
 
 func buddhaWorker(id int, state *internalState, passes chan iterationPass, results chan stateDelta, waitGroup *sync.WaitGroup) {
-	var options = state.Options
+	
 	for pass := range passes {
-		var escaped, stateDelta = iteration(pass.dX, pass.dY, options.MinIterations, options.MaxIterations)
+		var escaped, stateDelta = iteration(pass.dX, pass.dY, state)
 
 		// we only care about things that escaped.
 		if escaped {
@@ -34,8 +34,17 @@ func buddhaWorker(id int, state *internalState, passes chan iterationPass, resul
 	waitGroup.Done()
 }
 
+// Stops us burning in to the same pixel... May actually be incorrect though
+func isInfiniteZoom(x float32, y float32, options *Options, lastX int, lastY int) (bool, int, int) {
+	var nextX, nextY = imaginaryToImage(x, y, options.Width, options.Height)
+	return nextX == lastX && nextY == lastY, nextX, nextY
+}
 
-func iteration(dX float32, dY float32, minIteration int, maxIteration int) (bool, stateDelta) {
+func iteration(dX float32, dY float32, state *internalState) (bool, stateDelta) {
+	var options = state.Options
+	var minIteration int = options.MinIterations
+	var maxIteration int = options.MaxIterations
+
 	var fdx float32 = float32(dX)
 	var fdy float32 = float32(dY)
 	var x float32 = 0.0
@@ -43,17 +52,21 @@ func iteration(dX float32, dY float32, minIteration int, maxIteration int) (bool
 	var iteration int = 0
 	const escapeDist = 2*2
 	var escaped = (x*x + y*y) > escapeDist
+	var infiniteZoom = false
+	var lastX int
+	var lastY int
 
 	// fixed size, going for the more memory intensive option
 	// in favor of not re-scaling the array each iteration.
 	var coordinates = make([]icoordinate, maxIteration)
 
-	for (!escaped && iteration < maxIteration) {
+	for (!infiniteZoom && !escaped && iteration < maxIteration) {
 		var xtemp = x*x - y*y + fdx
 		y = 2*x*y + fdy
 		x = xtemp
 
 		escaped = (x*x + y*y) > escapeDist
+		infiniteZoom, lastX, lastY = isInfiniteZoom(x, y, options, lastX, lastY)
 		coordinates[iteration] = icoordinate{x, y}
 		iteration += 1
 	}

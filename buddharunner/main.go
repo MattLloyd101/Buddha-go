@@ -9,7 +9,7 @@ import (
 
 func main() {
 	var now = time.Now()
-	var outFolder = fmt.Sprintf("out/%d-%d-%d %d.%d.%d/", 
+	var outFolder = fmt.Sprintf("out/%04d-%02d-%02d %02d.%02d.%02d/", 
 		now.Year(), 
 		now.Month(),
 		now.Day(),
@@ -18,14 +18,14 @@ func main() {
 		now.Second())
 
 	const (
-		DPI = 72
-		width = 3.5
-		height = 2.0
+		DPI = 720 * (10.0/100.0)
+		width = 35
+		height = 20
 
 		realWidth = width*DPI
 		realHeight = height*DPI
 
-		passCount = realWidth*realHeight
+		passCount = realWidth*realHeight*10
 		MinIterations = 0x0
 		MaxIterations = 0xFFFF
 
@@ -39,6 +39,7 @@ func main() {
 		IntervalEnabled: renderIntervalEnabled,
 		Interval: renderInterval,
 		RenderType: buddha.RenderType16Greyscale,
+		Invert: false,
 	}
 
 	var tiffOptions = tiff.Options{

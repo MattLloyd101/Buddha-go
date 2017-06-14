@@ -27,23 +27,13 @@ func mergeWorker(id int, state *internalState, deltas chan stateDelta, waitGroup
 	var height = options.Height
 
 	for delta := range deltas {
-		var realCoords = imaginaryToRealCoordinates(delta.coordinates, width, height)
+		var realCoords = imaginaryToImagePoint(delta.coordinates, width, height)
 		combine(realCoords, delta.iterationCount, state)
 		
 		// fmt.Printf("[%d] merging %X deltas(%d)\n", id, delta.iteration, len(deltas))
 		state.LastMerged = delta.iteration
 	}
 	waitGroup.Done()
-}
-
-func imaginaryToRealCoordinates(imaginaryCoords []icoordinate, width int, height int) []image.Point {
-	var realCoords = make([]image.Point, len(imaginaryCoords))
-	for i, imaginary := range imaginaryCoords {
-		var x = scale(float32(imaginary.x), xMin, xMax, float32(0), float32(width))
-		var y = scale(float32(imaginary.y), yMin, yMax, float32(0), float32(height))
-		realCoords[i] = image.Point{int(x + 0.5), int(y + 0.5)}
-	}
-	return realCoords
 }
 
 func combine(coordinates []image.Point, iterationCount int, state *internalState) {
