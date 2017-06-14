@@ -23,8 +23,8 @@ func main() {
 		height = 20
 
 		passCount = 0xFFFFF
-		MinIterations = 0x400
-		MaxIterations = 0xFFFFF
+		MinIterations = 0x0
+		MaxIterations = 0xFFFF
 
 		logInterval = 1*time.Second
 

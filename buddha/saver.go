@@ -30,7 +30,7 @@ func setupSaver(state *internalState) *Saver {
 
 // TODO: this should be part of a Saver Strategy.
 func (saver *Saver) generateFilename(state *internalState) string {
-	return fmt.Sprintf("iteration-%X.tiff", state.LastMerged)
+	return fmt.Sprintf("iteration-0x%06X.tiff", state.LastMerged)
 }
 
 func (saver *Saver) saveWithFilename(img image.Image, filename string) {

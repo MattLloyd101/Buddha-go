@@ -39,8 +39,8 @@ func mergeWorker(id int, state *internalState, deltas chan stateDelta, waitGroup
 func imaginaryToRealCoordinates(imaginaryCoords []icoordinate, width int, height int) []image.Point {
 	var realCoords = make([]image.Point, len(imaginaryCoords))
 	for i, imaginary := range imaginaryCoords {
-		var x = scale(imaginary.x, xMin, xMax, float64(0), float64(width))
-		var y = scale(imaginary.y, yMin, yMax, float64(0), float64(height))
+		var x = scale(float32(imaginary.x), xMin, xMax, float32(0), float32(width))
+		var y = scale(float32(imaginary.y), yMin, yMax, float32(0), float32(height))
 		realCoords[i] = image.Point{int(x + 0.5), int(y + 0.5)}
 	}
 	return realCoords

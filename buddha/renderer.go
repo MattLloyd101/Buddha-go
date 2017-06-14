@@ -60,13 +60,13 @@ func render16bitGreyscale(state *internalState) image.Image {
 	for x := 0; x < options.Width; x++ {
 		for y := 0; y < options.Height; y++ {
 			var raw = (*state.RawData)[x][y]
-			var value = scale(float64(raw), 
+			var value = scale(float32(raw), 
 				0, 
-				float64(state.MaxValue), 
+				float32(state.MaxValue), 
 				0, 
-				float64(uint16Max))
+				float32(uint16Max))
 
-			// var value = clamp(float64(raw), 0, float64(uint16Max))
+			// var value = clamp(float32(raw), 0, float32(uint16Max))
 			var value16Bit = uint16(value)
 			
 			var colourValue = colour.Gray16{value16Bit}
