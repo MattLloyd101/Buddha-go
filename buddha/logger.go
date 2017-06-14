@@ -54,7 +54,8 @@ func (logger *Logger) showProgress() {
 	var minsPart = int(math.Floor(minutesLeft - float64(hoursPart * 60)))
 	var secondsPart = int(math.Floor(secondsLeft - float64(minsPart * 60) - float64(hoursPart * 60 * 60)))
 
-	fmt.Printf("%X/%X – %d hours %d mins %d seconds remain\n", iteration, passCount, hoursPart, minsPart, secondsPart)
+	var percent = 100 * (float32(iteration) / float32(passCount))
+	fmt.Printf("%06X/%06X – %02d hours %02d mins %02d seconds remain (%0.2f%%)\n", iteration, passCount, hoursPart, minsPart, secondsPart, percent)
 }
 
 func (logger *Logger) Stop() {
