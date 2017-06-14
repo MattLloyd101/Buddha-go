@@ -17,14 +17,16 @@ func main() {
 		now.Minute(),
 		now.Second())
 
-	var iterations = []int{0xFF, 0xFFF, 0x5FFF}
 	const (
-		DPI = 72
+		DPI = 72/2
 		width = 35
 		height = 20
 
 		passCount = 0xFFFFF
-		logInterval = 0xFFF
+		MinIterations = 0x400
+		MaxIterations = 0xFFFF
+
+		logInterval = 1*time.Second
 		saveInterval = 0xFFFF
 		saveIntervalEnabled = true
 		parrallelism = 16
@@ -34,22 +36,30 @@ func main() {
 		tiff.Deflate,
 		false}
 
-	var data = buddha.BuddhaData{
-		now.Unix(),
-		width*DPI,
-		height*DPI,
-		iterations,
-		passCount,
-		buddha.RenderType16Greyscale,
-		nil,
-		0,
-		&tiffOptions,
-		0,
-		logInterval,
-		saveInterval,
-		saveIntervalEnabled,
-		outFolder,
-		parrallelism}
+	var saveOptions = buddha.SaveOptions{
+		RenderType: buddha.RenderType16Greyscale,
+		TiffOptions: &tiffOptions,
+		SaveInterval: saveInterval,
+		SaveIntervalEnabled: saveIntervalEnabled,
+		OutFolder: outFolder}
 
-	buddha.RunBuddha(&data)	
+	var logOptions = buddha.LogOptions {
+		LogInterval: logInterval}
+
+	var options = buddha.Options{
+		Seed: now.Unix(),
+		Width: width*DPI,
+		Height: height*DPI,
+
+		PassCount: passCount,
+		MinIterations: MinIterations,
+		MaxIterations: MaxIterations,
+
+		WorkerParrallelism: 6,
+		MergeParrallelism: 2,
+
+		SaveOptions: &saveOptions,
+		LogOptions:	&logOptions}
+
+	buddha.RunBuddha(&options)	
 }
