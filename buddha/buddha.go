@@ -3,25 +3,8 @@ package buddha
 import (
 	"fmt"
 	"math/rand"
+	"sync"
 )
-
-const (
-	xMin float64 = -2.5
-	xMax float64 = 1.0
-	yMin float64 = -1.0
-	yMax float64 = 1.0
-	uint16Max uint16 = 0xFFFF
-)
-
-const (
-	_ = iota
-	RenderType16Greyscale
-)
-
-type icoordinate struct {
-	x float64
-	y float64
-}
 
 func initalizeData(options *Options) *internalState {
 	var state = internalState{
@@ -48,31 +31,51 @@ func RunBuddha(options *Options) {
 	var state = initalizeData(options)
 
 	fmt.Println("Setting up Logger")
-	setupLogger(state)
+	var logger = setupLogger(state)
 
-	var jobs = make(chan iterationPass)
-	var results = make(chan stateDelta)
-	var mergeResults = make(chan bool)
+	fmt.Println("Setting up Saver")
+	var saver = setupSaver(state)
+
+	fmt.Println("Setting up Renderer")
+	var renderer = setupRenderer(state, saver)
+
+	var passes = make(chan iterationPass, 0xFF)
+	var results = make(chan stateDelta, 0xFF)
+	var workerGroup sync.WaitGroup
+	var mergeGroup sync.WaitGroup
 
 	fmt.Println("Creating Workers")
 	for i := 0; i <= options.WorkerParrallelism; i++ {
-		go buddhaWorker(i, state, jobs, results)
+		workerGroup.Add(1)
+		go buddhaWorker(i, state, passes, results, &workerGroup)
 	}
 
 	fmt.Println("Creating Mergers")
 	for i := 0; i <= options.MergeParrallelism; i++ {
-		go mergeWorker(i, state, results, mergeResults)
+		mergeGroup.Add(1)
+		go mergeWorker(i, state, results, &mergeGroup)
 	}
 
-	fmt.Println("Loading Jobs")
+	fmt.Println("Loading passes")
 	for i := int64(0); i <= options.PassCount; i++ {
-		var dX = scale(rand.Float64(), 0, 1, xMin, xMax)
-		var dY = scale(rand.Float64(), 0, 1, yMin, yMax)
-		var job = iterationPass {iteration: i, dX: dX, dY: dY}
-		jobs <- job
+		var pass = createPass(i)
+		passes <- pass
 	}
-	close(jobs)
+	close(passes)
+	fmt.Println("Completed passes")
+	
+	workerGroup.Wait()
+	close(results)
+	fmt.Println("Workers complete")
 
-	render(state, "final.tiff")
+	mergeGroup.Wait()
+	fmt.Println("Mergers complete")
+
+	logger.Stop()
+
+	fmt.Println("Creating Final Render")
+	var img = renderer.render(state)
+	saver.saveWithFilename(img, "final.tiff")
+	fmt.Println("Final Render Complete")
 }
 

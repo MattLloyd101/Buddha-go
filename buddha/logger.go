@@ -57,6 +57,6 @@ func (logger *Logger) showProgress() {
 	fmt.Printf("%X/%X – %d hours %d mins %d seconds remain\n", iteration, passCount, hoursPart, minsPart, secondsPart)
 }
 
-func (logger *Logger) stop() {
+func (logger *Logger) Stop() {
 	logger.ticker.Stop();
 }

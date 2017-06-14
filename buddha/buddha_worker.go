@@ -1,8 +1,14 @@
 package buddha
 
 import (
-	"fmt"
+	// "fmt"
+	"sync"
 )
+
+type icoordinate struct {
+	x float64
+	y float64
+}
 
 type iterationPass struct {
 	iteration int64
@@ -10,19 +16,22 @@ type iterationPass struct {
 	dY float64
 }
 
-func buddhaWorker(id int, state *internalState, jobs chan iterationPass, results chan stateDelta) {
+func buddhaWorker(id int, state *internalState, passes chan iterationPass, results chan stateDelta, waitGroup *sync.WaitGroup) {
 	var options = state.Options
-	for job := range jobs {
-		var escaped, stateDelta = iteration(job.dX, job.dY, options.MaxIterations)
+	for pass := range passes {
+		var escaped, stateDelta = iteration(pass.dX, pass.dY, options.MinIterations, options.MaxIterations)
 
 		// we only care about things that escaped.
 		if escaped {
+			stateDelta.iteration = pass.iteration
 			results <- stateDelta
 		}
 
-		fmt.Println("iteration: %X", job.iteration)
-		state.LastIteration = job.iteration
+		// fmt.Printf("[%X] iteration: %X\n", id, pass.iteration)
+		// unstable but don't care it's only used for feedback.
+		state.LastIteration = pass.iteration
 	}
+	waitGroup.Done()
 }
 
 
@@ -30,7 +39,7 @@ func hasEscaped(x float64, y float64, escapeDist float64) bool {
 	return (x*x + y*y) > escapeDist
 }
 
-func iteration(dX float64, dY float64, maxIteration int) (bool, stateDelta) {
+func iteration(dX float64, dY float64, minIteration int, maxIteration int) (bool, stateDelta) {
 	var x float64 = 0.0
 	var y float64 = 0.0
 	var iteration int = 0
@@ -49,6 +58,12 @@ func iteration(dX float64, dY float64, maxIteration int) (bool, stateDelta) {
 		escaped = hasEscaped(x, y, escapeDist)
 		coordinates[iteration] = icoordinate{x, y}
 		iteration += 1
+	}
+
+	// if we haven't met the minimum iterations let's skip over.
+	if (iteration < minIteration) {
+		// fmt.Printf("ignoring pass due to low iteration count: %d\n", iteration)
+		escaped = false
 	}
 
 	return escaped, stateDelta {iterationCount: iteration, coordinates: coordinates}

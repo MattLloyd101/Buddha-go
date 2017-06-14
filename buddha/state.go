@@ -1,8 +1,9 @@
 package buddha
 
 import (
-	"fmt"
-	image "image"
+	// "fmt"
+	"sync"
+	"image"
 )
 type internalState struct {
 	Options *Options
@@ -14,12 +15,13 @@ type internalState struct {
 }
 
 type stateDelta struct {
+	iteration int64
 	iterationCount int
 	coordinates []icoordinate
 }
 
 
-func mergeWorker(id int, state *internalState, deltas chan stateDelta, results chan bool) {
+func mergeWorker(id int, state *internalState, deltas chan stateDelta, waitGroup *sync.WaitGroup) {
 	var options = state.Options
 	var width = options.Width
 	var height = options.Height
@@ -27,9 +29,11 @@ func mergeWorker(id int, state *internalState, deltas chan stateDelta, results c
 	for delta := range deltas {
 		var realCoords = imaginaryToRealCoordinates(delta.coordinates, width, height)
 		combine(realCoords, delta.iterationCount, state)
-		fmt.Println("merging")
-		results <- true
+		
+		// fmt.Printf("[%d] merging %X deltas(%d)\n", id, delta.iteration, len(deltas))
+		state.LastMerged = delta.iteration
 	}
+	waitGroup.Done()
 }
 
 func imaginaryToRealCoordinates(imaginaryCoords []icoordinate, width int, height int) []image.Point {

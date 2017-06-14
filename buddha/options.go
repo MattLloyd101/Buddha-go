@@ -13,6 +13,7 @@ type Options struct {
 	WorkerParrallelism int
 	MergeParrallelism int
 	
+	RenderOptions *RenderOptions
 	SaveOptions *SaveOptions
 	LogOptions *LogOptions
 }

@@ -2,10 +2,56 @@ package buddha
 
 import (
 	"fmt"
-	image "image"
+	"time"
+	"image"
 	// Damn Americans and their insistence on spelling things wrong!
 	colour "image/color"
 )
+
+const (
+	_ = iota
+	RenderType16Greyscale
+)
+
+type RenderOptions struct {
+	IntervalEnabled bool	
+	Interval time.Duration
+	RenderType int
+}
+
+type Renderer struct {
+	renderType int
+	ticker *time.Ticker
+}
+
+func setupRenderInterval(renderer *Renderer, saver *Saver, state *internalState) *time.Ticker {
+	var options = state.Options
+	var renderOptions = options.RenderOptions
+
+	var ticker = time.NewTicker(renderOptions.Interval)
+    go func() {
+        for range ticker.C {
+            var img = renderer.render(state)
+            saver.save(img, state)
+        }
+    }()
+
+    return ticker
+}
+
+func setupRenderer(state *internalState, saver *Saver) *Renderer {
+	var options = state.Options
+	var renderOptions = options.RenderOptions
+
+	var renderer = Renderer {
+		renderType: renderOptions.RenderType}
+
+	if (renderOptions.IntervalEnabled) {
+		renderer.ticker = setupRenderInterval(&renderer, saver, state)
+	}
+
+	return &renderer
+}
 
 func render16bitGreyscale(state *internalState) image.Image {
 	var options = state.Options
@@ -19,10 +65,9 @@ func render16bitGreyscale(state *internalState) image.Image {
 				float64(state.MaxValue), 
 				0, 
 				float64(uint16Max))
+
 			// var value = clamp(float64(raw), 0, float64(uint16Max))
 			var value16Bit = uint16(value)
-
-			if(raw == state.MaxValue) { fmt.Printf("Max(%d) %d - %f - %X\n", state.MaxValue, raw, value, value16Bit) }
 			
 			var colourValue = colour.Gray16{value16Bit}
 			img.SetGray16(x, y, colourValue)
@@ -33,11 +78,19 @@ func render16bitGreyscale(state *internalState) image.Image {
 	return img
 }
 
-func render(state *internalState, filename string) {
-	var saveOptions = state.Options.SaveOptions
-	switch saveOptions.RenderType {
+func (renderer *Renderer) render(state *internalState) image.Image {
+	fmt.Printf("Renering State at: %X\n", state.LastMerged)
+	switch renderer.renderType {
 	case RenderType16Greyscale:
-		var img = render16bitGreyscale(state)
-		saveFile(img, saveOptions, filename)
+		return render16bitGreyscale(state)
+	}
+
+	fmt.Println("[WARN] Unrecognised Render type! Falling back to 16bit Greyscale!")
+	return render16bitGreyscale(state)
+}
+
+func (renderer *Renderer) Stop() {
+	if renderer.ticker != nil {
+		renderer.ticker.Stop();
 	}
 }
