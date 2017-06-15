@@ -9,7 +9,6 @@ type internalState struct {
 	Options *Options
 	RawData *[][]uint32
 	MaxValue uint32
-	Skipped int64
 	LastIteration int64
 	LastMerged int64
 }
@@ -39,22 +38,16 @@ func mergeWorker(id int, state *internalState, deltas chan stateDelta, waitGroup
 func combine(coordinates []image.Point, iterationCount int, state *internalState) {
 	var rawData = state.RawData
 
-	// fmt.Println("iterationCount", iterationCount)
-
 	// we only go over iterationCount as coordinates isn't perfectly sized for efficiency.
 	for i := 0; i < iterationCount; i++ {
-		// fmt.Printf("index (%d)\n", i)
-		// fmt.Printf("coordinates len(%d)\n", len(coordinates))
 		var coordinate = coordinates[i]
 		
-		// fmt.Printf("%d %+v\n", i, coordinate)
+		// if exists within the bounds increment
 		if (coordinate.X > 0 && coordinate.Y > 0 && coordinate.X < state.Options.Width && coordinate.Y < state.Options.Height) {
 			(*rawData)[coordinate.X][coordinate.Y]++
 		
 			var value = (*rawData)[coordinate.X][coordinate.Y]
 			if(value > state.MaxValue) { state.MaxValue = value }
-		} else {
-			state.Skipped++
-		}
+		} 
 	}
 }

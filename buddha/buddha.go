@@ -8,11 +8,7 @@ import (
 
 func initalizeData(options *Options) *internalState {
 	var state = internalState{
-		Options: options,
-		RawData: nil,
-		MaxValue: 0,
-		Skipped: 0,
-		LastIteration: 0}
+		Options: options}
 
 	fmt.Println("Initalising Data")
 	fmt.Printf("Size: %dx%d\n", options.Width, options.Height)
